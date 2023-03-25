@@ -1,4 +1,4 @@
-"""Restock component: Allow the user to restock copies of a comic
+"""Sell component: Allow the user to sell copies of a comic
 Jack Andrews
 25/3/23"""
 import customtkinter as ctk
@@ -88,8 +88,8 @@ class GUI:
             width=0,
             height=20,
             fg_color="green",
-            hover_color="#006400")
-        # No functionality yet
+            hover_color="#006400",
+            command=self.sell_comics)
         self.sell_btn.grid(
             row=4,
             column=1,
@@ -109,7 +109,7 @@ class GUI:
             column=2,
             ipadx=5,
             ipady=10,
-            sticky='w',
+            sticky='ew',
             padx=10,
             pady=5)
         self.root.mainloop()
@@ -137,6 +137,75 @@ class GUI:
             self.woman_lbl.configure(
                 text=f"Water Woman: number in stock: {self.woman_stock}")
 
+    def sell_comics(self):
+        amnt = self.num_comics_var.get().replace(' ', '')
+        if amnt == '':
+            return
+        elif int(amnt) == 0:
+            return
+        amnt = int(amnt)
+        comic = self.comic_var.get()
+        self.confirm = False
+        if comic == "Super Dude":
+            if self.dude_stock - amnt < 0:
+                Confirm(
+                    self,
+                    f"Can only sell at most {self.dude_stock} comics",
+                    self.dude_stock)
+                if self.confirm:
+                    self.sold += self.dude_stock
+                    self.dude_stock = 0
+                    self.dude_lbl.configure(
+                        text=f"Super Dude: number in stock: {self.dude_stock}")
+                else:
+                    return
+            else:
+                self.dude_stock -= amnt
+                self.sold += amnt
+                self.dude_lbl.configure(
+                    text=f"Super Dude: number in stock: {self.dude_stock}")
+        elif comic == "Lizard Man":
+            if self.lizard_stock - amnt < 0:
+                Confirm(
+                    self,
+                    f"Can only sell at most {self.lizard_stock} comics",
+                    self.lizard_stock)
+                if self.confirm:
+                    self.sold += self.lizard_stock
+                    self.lizard_stock = 0
+                    self.lizard_lbl.configure(
+                        text="Lizard Man: number in stock:"
+                             f" {self.lizard_stock}")
+                else:
+                    return
+            else:
+                self.lizard_stock -= amnt
+                self.sold += amnt
+                self.lizard_lbl.configure(
+                    text=f"Lizard Man: number in stock: {self.lizard_stock}")
+        elif comic == "Water Woman":
+            if self.woman_stock - amnt < 0:
+                Confirm(
+                    self,
+                    f"Can only sell at most {self.woman_stock} comics",
+                    self.woman_stock)
+                if self.confirm:
+                    self.sold += self.woman_stock
+                    self.woman_stock = 0
+                    self.woman_lbl.configure(
+                        text="Water Woman: number in stock:"
+                             f" {self.woman_stock}")
+                else:
+                    return
+            else:
+                self.woman_stock -= amnt
+                self.sold += amnt
+                self.woman_lbl.configure(
+                    text=f"Water Woman: number in stock: {self.woman_stock}")
+
+        self.sold_lbl.configure(
+            text=f"Total number of comics sold today: {self.sold}")
+
     def validate(self, text):  # Prevents the user from entering a non-integer
         text = text.replace(" ", '')
         if text == "":
@@ -147,8 +216,45 @@ class GUI:
             return True
         except ValueError:
             self.bad_text_lbl.configure(text=f"Bad character '{text[-1]}'")
-            # Telling the user exactly what was invalid
+            print('\a', end='', flush=True)
+            # Telling the user exactly what was invalid, and giving them an
+            # error sound
             return False
+
+
+class Confirm:
+    # Window that appears when you try to sell too much stock
+    def __init__(self, parent, warning, stock):
+        self.parent = parent
+        # This allows us to access the attributes of the parent class
+        self.warning = warning
+        self.stock = stock
+        self.warning_box = ctk.CTkToplevel(self.parent.root)
+        self.warning_box.wait_visibility()
+        self.warning_box.grab_set()
+        # Forces the user to interact with this window
+        self.header_lbl = ctk.CTkLabel(
+            self.warning_box, text=self.warning, font=(
+                "Calibri", 15))
+        self.header_lbl.grid(row=0, column=0, columnspan=2, padx=50, pady=10)
+
+        self.confirm_btn = ctk.CTkButton(
+            self.warning_box, text="Sell all stock", command=self.confirm)
+        self.confirm_btn.grid(row=1, column=0, sticky='ew', padx=5, pady=5)
+
+        self.cancel_btn = ctk.CTkButton(
+            self.warning_box, text="Cancel", command=self.cancel)
+        self.cancel_btn.grid(row=1, column=1, sticky='ew', padx=5, pady=5)
+
+        self.parent.root.wait_window(self.warning_box)
+
+    def confirm(self):
+        self.parent.confirm = True
+        self.warning_box.destroy()
+
+    def cancel(self):
+        self.parent.confirm = False
+        self.warning_box.destroy()
 
 
 def main():
