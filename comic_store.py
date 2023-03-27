@@ -1,7 +1,9 @@
-"""Sell component: Allow the user to sell copies of a comic
+"""Export component: Allow the user to save stock details to a file
 Jack Andrews
-25/3/23"""
+27/3/23"""
 import customtkinter as ctk
+from customtkinter import filedialog
+# This allows us to open a file dialog window
 
 
 class GUI:
@@ -16,7 +18,13 @@ class GUI:
         self.header_lbl = ctk.CTkLabel(
             mainframe, text="Comic Book Store", font=(
                 "Calibri", 24, "bold"))
-        self.header_lbl.grid(row=0, column=0, columnspan=3, padx=150, pady=10)
+        self.header_lbl.grid(
+            row=0,
+            column=0,
+            columnspan=4,
+            padx=150,
+            pady=10,
+            sticky='ew')
 
         self.dude_stock = 8
         self.lizard_stock = 12
@@ -48,14 +56,14 @@ class GUI:
             mainframe,
             text="Select comic title:").grid(
             row=1,
-            column=1,
+            column=2,
             sticky='w')
 
         ctk.CTkLabel(
             mainframe,
             text="Number of comics:").grid(
             row=3,
-            column=1,
+            column=2,
             sticky='w')
 
         self.comic_var = ctk.StringVar(mainframe, value="Super Dude")
@@ -66,21 +74,21 @@ class GUI:
                 "Lizard Man",
                 "Water Woman"],
             variable=self.comic_var)
-        self.comic_opt.grid(row=1, column=2, sticky='w', padx=10)
+        self.comic_opt.grid(row=1, column=3, sticky='w', padx=10)
 
         self.num_comics_var = ctk.StringVar(mainframe)
         self.bad_text_lbl = ctk.CTkLabel(
             mainframe, text_color="red", font=(
                 "Calibri", 10), text='')
         # This label is for when the user inputs an invalid character
-        self.bad_text_lbl.grid(row=2, column=2)
+        self.bad_text_lbl.grid(row=2, column=3)
         self.comics_entry = ctk.CTkEntry(
             mainframe, width=100, textvariable=self.num_comics_var)
         self.comics_entry.configure(
             validate="key", validatecommand=(
                 self.vcmd, "%P"))
         # Configuring how the validation command is run
-        self.comics_entry.grid(row=3, column=2, sticky='ew', padx=10)
+        self.comics_entry.grid(row=3, column=3, sticky='ew', padx=10)
 
         self.sell_btn = ctk.CTkButton(
             mainframe,
@@ -92,10 +100,10 @@ class GUI:
             command=self.sell_comics)
         self.sell_btn.grid(
             row=4,
-            column=1,
+            column=2,
             ipadx=5,
             ipady=10,
-            sticky='w',
+            sticky='ew',
             pady=5)
 
         self.restock_btn = ctk.CTkButton(
@@ -106,7 +114,22 @@ class GUI:
             command=self.stock_comics)
         self.restock_btn.grid(
             row=4,
-            column=2,
+            column=3,
+            ipadx=5,
+            ipady=10,
+            sticky='ew',
+            padx=10,
+            pady=5)
+
+        self.export_btn = ctk.CTkButton(
+            mainframe,
+            text="Export stats",
+            width=0,
+            height=20,
+            command=self.export)
+        self.export_btn.grid(
+            row=4,
+            column=1,
             ipadx=5,
             ipady=10,
             sticky='ew',
@@ -221,22 +244,38 @@ class GUI:
             # error sound
             return False
 
+    def export(self):
+        self.history = [f"Super Dude: {self.dude_stock}",
+                        f"Lizard Man: {self.lizard_stock}",
+                        f"Water Woman: {self.woman_stock}",
+                        f"Total Sold: {self.sold}"]
+        # This is the data that will be written to a file
+        Export(self)
+
 
 class Confirm:
     # Window that appears when you try to sell too much stock
     def __init__(self, parent, warning, stock):
+        print('\a')
         self.parent = parent
         # This allows us to access the attributes of the parent class
         self.warning = warning
         self.stock = stock
         self.warning_box = ctk.CTkToplevel(self.parent.root)
+        self.warning_box.title("Confirm")
         self.warning_box.wait_visibility()
         self.warning_box.grab_set()
         # Forces the user to interact with this window
         self.header_lbl = ctk.CTkLabel(
             self.warning_box, text=self.warning, font=(
                 "Calibri", 15))
-        self.header_lbl.grid(row=0, column=0, columnspan=2, padx=50, pady=10)
+        self.header_lbl.grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            padx=50,
+            pady=10,
+            sticky='ew')
 
         self.confirm_btn = ctk.CTkButton(
             self.warning_box, text="Sell all stock", command=self.confirm)
@@ -255,6 +294,40 @@ class Confirm:
     def cancel(self):
         self.parent.confirm = False
         self.warning_box.destroy()
+
+
+class Export:
+    # This window allows the user to save stock data to a specified file
+    def __init__(self, parent):
+        self.parent = parent
+        self.export_box = ctk.CTkToplevel(self.parent.root)
+        self.export_box.title("Export")
+        self.export_box.wait_visibility()
+        self.export_box.grab_set()
+        self.text = ctk.CTkTextbox(
+            self.export_box, height=80, width=150, font=(
+                "Calibri", 12), state="disabled")
+        self.text.grid(row=0, column=0, sticky='nsew', padx=10, pady=10)
+        self.text.configure(state="normal")
+        self.text.insert("1.0", "\n".join(self.parent.history))
+        self.text.configure(state="disabled")
+        # Making the text read-only
+        self.export_btn = ctk.CTkButton(
+            self.export_box,
+            text="Save stats",
+            command=self.save_stats)
+        self.export_btn.grid(row=1, column=1, sticky='se', padx=10, pady=10)
+
+    def save_stats(self):
+        # Using this to make the default save directory the current directory
+        from os import getcwd
+        # Opens file dialog window so the user can save the data
+        try:
+            with filedialog.asksaveasfile(initialdir=getcwd()) as f:
+                f.write("\n".join(self.parent.history))
+            self.export_box.destroy()
+        except AttributeError:
+            pass
 
 
 def main():
