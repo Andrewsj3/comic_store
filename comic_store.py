@@ -1,4 +1,4 @@
-"""Export component: Allow the user to save stock details to a file
+"""Refactorization: making the code more efficient
 Jack Andrews
 27/3/23"""
 import customtkinter as ctk
@@ -25,25 +25,23 @@ class GUI:
             padx=150,
             pady=10,
             sticky='ew')
+        self.comics = {"Super Dude": 8, "Lizard Man": 12, "Water Woman": 3}
 
-        self.dude_stock = 8
-        self.lizard_stock = 12
-        self.woman_stock = 3
         self.sold = 0
 
         self.dude_lbl = ctk.CTkLabel(
             mainframe,
-            text=f"Super Dude: number in stock: {self.dude_stock}")
+            text=f"Super Dude: number in stock: {self.comics['Super Dude']}")
         self.dude_lbl.grid(row=1, column=0, sticky='w', padx=30, pady=5)
 
         self.lizard_lbl = ctk.CTkLabel(
             mainframe,
-            text=f"Lizard Man: number in stock: {self.lizard_stock}")
+            text=f"Lizard Man: number in stock: {self.comics['Lizard Man']}")
         self.lizard_lbl.grid(row=2, column=0, sticky='w', padx=30, pady=5)
 
         self.woman_lbl = ctk.CTkLabel(
             mainframe,
-            text=f"Water Woman: number in stock: {self.woman_stock}")
+            text=f"Water Woman: number in stock: {self.comics['Water Woman']}")
         self.woman_lbl.grid(row=3, column=0, sticky='w', padx=30, pady=5)
 
         self.sold_lbl = ctk.CTkLabel(
@@ -69,10 +67,7 @@ class GUI:
         self.comic_var = ctk.StringVar(mainframe, value="Super Dude")
         self.comic_opt = ctk.CTkOptionMenu(
             mainframe,
-            values=[
-                "Super Dude",
-                "Lizard Man",
-                "Water Woman"],
+            values=[*self.comics],
             variable=self.comic_var)
         self.comic_opt.grid(row=1, column=3, sticky='w', padx=10)
 
@@ -147,18 +142,18 @@ class GUI:
         # Checking the amount is a valid integer
         amnt = int(amnt)
         comic = self.comic_var.get()
-        if comic == "Super Dude":
-            self.dude_stock += amnt
-            self.dude_lbl.configure(
-                text=f"Super Dude: number in stock: {self.dude_stock}")
-        elif comic == "Lizard Man":
-            self.lizard_stock += amnt
-            self.lizard_lbl.configure(
-                text=f"Lizard Man: number in stock: {self.lizard_stock}")
-        elif comic == "Water Woman":
-            self.woman_stock += amnt
-            self.woman_lbl.configure(
-                text=f"Water Woman: number in stock: {self.woman_stock}")
+        self.comics[comic] += amnt
+        self.update_labels()
+
+    def update_labels(self):
+        self.dude_lbl.configure(
+            text=f"Super Dude: number in stock: {self.comics['Super Dude']}")
+        self.lizard_lbl.configure(
+            text=f"Lizard Man: number in stock: {self.comics['Lizard Man']}")
+        self.woman_lbl.configure(
+            text=f"Water Woman: number in stock: {self.comics['Water Woman']}")
+        self.sold_lbl.configure(
+            text=f"Total number of comics sold today: {self.sold}")
 
     def sell_comics(self):
         amnt = self.num_comics_var.get().replace(' ', '')
@@ -169,65 +164,17 @@ class GUI:
         amnt = int(amnt)
         comic = self.comic_var.get()
         self.confirm = False
-        if comic == "Super Dude":
-            if self.dude_stock - amnt < 0:
-                Confirm(
-                    self,
-                    f"Can only sell at most {self.dude_stock} comics",
-                    self.dude_stock)
-                if self.confirm:
-                    self.sold += self.dude_stock
-                    self.dude_stock = 0
-                    self.dude_lbl.configure(
-                        text=f"Super Dude: number in stock: {self.dude_stock}")
-                else:
-                    return
+        if self.comics[comic] - amnt < 0:
+            Confirm(self, f"Can only sell at most {self.comics[comic]} comics")
+            if self.confirm:
+                self.sold += self.comics[comic]
+                self.comics[comic] = 0
             else:
-                self.dude_stock -= amnt
-                self.sold += amnt
-                self.dude_lbl.configure(
-                    text=f"Super Dude: number in stock: {self.dude_stock}")
-        elif comic == "Lizard Man":
-            if self.lizard_stock - amnt < 0:
-                Confirm(
-                    self,
-                    f"Can only sell at most {self.lizard_stock} comics",
-                    self.lizard_stock)
-                if self.confirm:
-                    self.sold += self.lizard_stock
-                    self.lizard_stock = 0
-                    self.lizard_lbl.configure(
-                        text="Lizard Man: number in stock:"
-                             f" {self.lizard_stock}")
-                else:
-                    return
-            else:
-                self.lizard_stock -= amnt
-                self.sold += amnt
-                self.lizard_lbl.configure(
-                    text=f"Lizard Man: number in stock: {self.lizard_stock}")
-        elif comic == "Water Woman":
-            if self.woman_stock - amnt < 0:
-                Confirm(
-                    self,
-                    f"Can only sell at most {self.woman_stock} comics",
-                    self.woman_stock)
-                if self.confirm:
-                    self.sold += self.woman_stock
-                    self.woman_stock = 0
-                    self.woman_lbl.configure(
-                        text="Water Woman: number in stock:"
-                             f" {self.woman_stock}")
-                else:
-                    return
-            else:
-                self.woman_stock -= amnt
-                self.sold += amnt
-                self.woman_lbl.configure(
-                    text=f"Water Woman: number in stock: {self.woman_stock}")
-
-        self.sold_lbl.configure(
-            text=f"Total number of comics sold today: {self.sold}")
+                return
+        else:
+            self.comics[comic] -= amnt
+            self.sold += amnt
+        self.update_labels()
 
     def validate(self, text):  # Prevents the user from entering a non-integer
         text = text.replace(" ", '')
@@ -245,9 +192,9 @@ class GUI:
             return False
 
     def export(self):
-        self.history = [f"Super Dude: {self.dude_stock}",
-                        f"Lizard Man: {self.lizard_stock}",
-                        f"Water Woman: {self.woman_stock}",
+        self.history = [f"Super Dude: {self.comics['Super Dude']}",
+                        f"Lizard Man: {self.comics['Lizard Man']}",
+                        f"Water Woman: {self.comics['Water Woman']}",
                         f"Total Sold: {self.sold}"]
         # This is the data that will be written to a file
         Export(self)
@@ -255,12 +202,11 @@ class GUI:
 
 class Confirm:
     # Window that appears when you try to sell too much stock
-    def __init__(self, parent, warning, stock):
-        print('\a')
+    def __init__(self, parent, warning):
+        print('\a', end='')
         self.parent = parent
         # This allows us to access the attributes of the parent class
         self.warning = warning
-        self.stock = stock
         self.warning_box = ctk.CTkToplevel(self.parent.root)
         self.warning_box.title("Confirm")
         self.warning_box.wait_visibility()
@@ -327,6 +273,7 @@ class Export:
                 f.write("\n".join(self.parent.history))
             self.export_box.destroy()
         except AttributeError:
+            # Happens when the user closes the window without saving
             pass
 
 
